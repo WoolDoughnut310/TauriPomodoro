@@ -1,78 +1,63 @@
-import { readable } from 'svelte/store';
+import { derived, readable, writable } from 'svelte/store';
 import { listen } from '@tauri-apps/api/event';
 import { Store } from '@tauri-apps/plugin-store';
+import { invoke } from '@tauri-apps/api';
 
-const appStore = new Store('.store.dat');
+export const appStore = new Store('.store.dat');
 
-enum TimePhase {
-	WORK,
-	SHORT_BREAK,
-	LONG_BREAK
+export enum TimePhase {
+	WORK = 'Work',
+	SHORT_BREAK = 'ShortBreak',
+	LONG_BREAK = 'LongBreak'
 }
 
-export const settings = readable(
-	{
-		workTime: 5,
-		shortBreakTime: 5,
-		longBreakTime: 20,
-		longBreakInterval: 4
-	},
-	(set) => {
-		let unlisten: () => void;
-		appStore.onKeyChange('settings', (value) => set(value)).then((fn) => (unlisten = fn));
-		return async () => {
-			unlisten?.();
-		};
-	}
-);
-
-export const stats = readable({
-	today: {
-		minutes: 0,
-		sessions: 0
-	},
-	week: {
-		minutes: 0,
-		sessions: 0
-	},
-	total: {
-		minutes: 0,
-		sessions: 0
-	}
-});
-
-export const remaining = readable(0, (set, update) => {
-	let unlisten: () => void;
-	listen('remaining', (event) => {
-		set(event.payload * 60);
-	}).then((fn) => (unlisten = fn));
-
-	const interval = setInterval(() => {
-		update((previous) => previous - 1);
-	});
-
-	return () => {
-		unlisten?.();
-		clearInterval(interval);
-	};
-});
-
-export const paused = readable(true, (set) => {
-	let unlisten: () => void;
-	listen('paused', (event) => {
-		set(event.payload);
-	}).then((fn) => (unlisten = fn));
-	return () => {
-		unlisten?.();
-	};
-});
+export const paused = writable(true);
+export const hasStarted = writable(false);
 
 export const phase = readable<TimePhase>(TimePhase.WORK, (set) => {
 	let unlisten: () => void;
 	listen('switch-phase', (event) => {
-		set(event.payload);
+		set(event.payload as TimePhase);
 	}).then((fn) => (unlisten = fn));
 	return () => {
 		unlisten?.();
 	};
 });
+
+export const sessionNumber = readable(1, (set) => {
+	let unlisten: () => void;
+	listen('session-number', (event) => {
+		set((event.payload as number) + 1);
+	}).then((fn) => (unlisten = fn));
+	return () => {
+		unlisten?.();
+	};
+});
+
+export const remaining = derived(
+	paused,
+	($paused, set, update) => {
+		let unlisten: () => void;
+		listen('remaining', (event) => {
+			set((event.payload as number) * 60);
+		}).then((fn) => (unlisten = fn));
+
+		const interval = setInterval(() => {
+			if ($paused) return;
+			update((previous) => {
+				const newValue = Math.max(previous - 1, 0);
+				if (newValue === 0) {
+					invoke('switch_phase', { isPrevious: false, isUser: false });
+				}
+
+				return newValue;
+			});
+		}, 1000);
+
+		return () => {
+			unlisten?.();
+			clearInterval(interval);
+		};
+	},
+	25 * 60
+);
