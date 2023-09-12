@@ -8,9 +8,6 @@
 	import { appWindow } from '@tauri-apps/api/window';
 	import { phase, remaining } from '$lib/stores';
 
-	onMount(async () => {
-		await invoke('restore_state');
-	});
 	$: parsedRemaining = [Math.floor($remaining / 60), $remaining % 60].map((n) =>
 		String(n).padStart(2, '0')
 	);
