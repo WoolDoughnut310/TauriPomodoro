@@ -3,8 +3,6 @@
 	import ActionButton from '$lib/ActionButton.svelte';
 	import PhaseSwitcher from '$lib/PhaseSwitcher.svelte';
 	import PhaseTitle from '$lib/PhaseTitle.svelte';
-	import { onMount } from 'svelte';
-	import { invoke } from '@tauri-apps/api/tauri';
 	import { appWindow } from '@tauri-apps/api/window';
 	import { phase, remaining } from '$lib/stores';
 

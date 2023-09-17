@@ -12,7 +12,7 @@
 	$: appStore.get('settings').then((value) => (total = value[phaseTimeMapping[$phase]] * 60));
 
 	$: value = [Math.floor($remaining / 60), $remaining % 60];
-	$: progress = ($remaining / total) * 100; // TO update
+	$: progress = ($remaining / total) * 100;
 </script>
 
 <div class="radial-progress" style="--size: 12rem; --value: {progress}">
