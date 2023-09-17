@@ -253,7 +253,7 @@ fn restore_state(
 // Check if the stats for yesterday or last week need resetting
 fn check_stat_reset(store: &mut Store<Wry>) -> Result<bool, Error> {
     let last_opened: DateTime<Utc> = get_from_store(store, "last_opened")?;
-    let mut stats: Stats = get_from_store(store, "stats");
+    let mut stats: Stats = get_from_store(store, "stats")?;
 
     let today = Utc::now();
 
